@@ -74,7 +74,26 @@ export function digest(text: string): { rows: DigestRow[]; badLines: number } {
   return { rows, badLines };
 }
 
-export const readNight: ReadNight = (runsDir, night) => {
+export type NightCounts = { ok: number; retry: number; fail: number };
+
+// Log lines per status for one night, using the same line parser as the digest. Null if no file.
+export function countNight(runsDir: string, night: string): NightCounts | null {
+  if (!isNight(night)) return null;
+  let text: string;
+  try {
+    text = readFileSync(join(runsDir, `${night}.jsonl`), 'utf8');
+  } catch {
+    return null;
+  }
+  const counts: NightCounts = { ok: 0, retry: 0, fail: 0 };
+  for (const line of text.split('\n')) {
+    const e = line.trim() === '' ? null : parseLine(line);
+    if (e) counts[e.status]++;
+  }
+  return counts;
+}
+
+export const readNight: ReadNight =(runsDir, night) => {
   if (!isNight(night)) return null;
   let text: string;
   try {
